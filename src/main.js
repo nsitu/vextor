@@ -520,8 +520,8 @@ fontSize.addEventListener('change', async () => {
     }
 });
 
-// Auto-generate when color changes
-colorPicker.addEventListener('change', async () => {
+// Auto-generate when color changes (use 'input' for real-time updates)
+colorPicker.addEventListener('input', async () => {
     if (textInput.value.trim()) {
         await generateSVG(textInput.value);
     }
