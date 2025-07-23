@@ -1,3 +1,181 @@
 body {
-  font-family: sans-serif;
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background-color: #f5f5f5;
+}
+
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+  color: #333;
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.input-section {
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.font-upload {
+  margin: 20px 0;
+  padding: 15px;
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+}
+
+.font-upload label {
+  display: block;
+  margin-bottom: 10px;
+  color: #555;
+  font-weight: bold;
+}
+
+#fontFile {
+  margin-bottom: 10px;
+}
+
+#fontStatus {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  font-style: italic;
+}
+
+.controls {
+  margin: 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.controls label {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  font-size: 14px;
+}
+
+#fontSize {
+  width: 100px;
+  margin: 0 10px;
+}
+
+#fontSizeValue {
+  font-weight: bold;
+  color: #4CAF50;
+  min-width: 40px;
+}
+
+label {
+  display: block;
+  margin-bottom: 10px;
+  color: #555;
+  font-weight: bold;
+}
+
+#textInput {
+  width: 300px;
+  padding: 12px;
+  font-size: 16px;
+  border: 2px solid #ddd;
+  border-radius: 5px;
+  margin-right: 10px;
+  outline: none;
+  transition: border-color 0.3s;
+}
+
+#textInput:focus {
+  border-color: #4CAF50;
+}
+
+.svg-container {
+  text-align: center;
+  margin-top: 20px;
+}
+
+#svgOutput {
+  display: inline-block;
+  margin: 20px 0;
+}
+
+.download-section {
+  margin-top: 20px;
+}
+
+#downloadBtn {
+  padding: 10px 20px;
+  font-size: 14px;
+  background-color: #2196F3;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+#downloadBtn:hover {
+  background-color: #1976D2;
+}
+
+.error {
+  color: #d32f2f;
+  font-style: italic;
+}
+
+.loading {
+  color: #4CAF50;
+  font-style: italic;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 600px) {
+  .container {
+    padding: 20px;
+  }
+
+  #textInput {
+    width: 250px;
+    margin-bottom: 10px;
+    margin-right: 0;
+  }
+
+  .input-section {
+    text-align: center;
+  }
+
+  .controls {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .controls label {
+    justify-content: center;
+  }
 }
