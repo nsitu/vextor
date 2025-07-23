@@ -354,28 +354,16 @@ async function generateSVG(text) {
                 convertedSvg = session.getSvgString();
             }
 
-        } catch (firstError) {
-            console.log('svg-text-to-path library failed:', firstError.message);
+        } catch (error) {
+            console.log('svg-text-to-path library failed:', error.message);
 
             // Clean up first session
             if (session) session.destroy();
 
-            // Use manual text-to-path conversion as primary approach
-            console.log('Using manual text-to-path conversion...');
-            try {
-                convertedSvg = createManualTextPaths(svgString, text, currentFontSize, currentColor, shouldSplitPaths);
+            // fallback: return the original SVG with a warning
+            convertedSvg = svgString.replace('</svg>',
+                `<!-- Warning: Text-to-path conversion failed, showing original text --></svg>`);
 
-                // Add a note about the conversion method
-                convertedSvg = convertedSvg.replace('</svg>',
-                    `<!-- Generated using manual vector path conversion --></svg>`);
-
-            } catch (secondError) {
-                console.log('Manual conversion failed:', secondError.message);
-
-                // Final fallback: return the original SVG with a warning
-                convertedSvg = svgString.replace('</svg>',
-                    `<!-- Warning: Text-to-path conversion failed, showing original text --></svg>`);
-            }
         }
 
         console.log('Final converted SVG:', convertedSvg);
@@ -485,99 +473,6 @@ function cropSVGToPathBounds(svgString) {
     }
 }
 
-
-// Manual fallback function to create simple letter paths
-function createManualTextPaths(svgString, text, fontSize, color, splitPaths) {
-    // Simple letter shapes as SVG paths (very basic alphabet)
-    const letterPaths = {
-        'A': 'M2,20 L10,2 L18,20 M6,14 L14,14',
-        'B': 'M2,2 L2,20 M2,2 L14,2 Q18,2 18,7 Q18,11 10,11 M2,11 L14,11 Q18,11 18,16 Q18,20 14,20 L2,20',
-        'C': 'M18,7 Q18,2 13,2 L7,2 Q2,2 2,7 L2,15 Q2,20 7,20 L13,20 Q18,20 18,15',
-        'D': 'M2,2 L2,20 M2,2 L12,2 Q18,2 18,11 Q18,20 12,20 L2,20',
-        'E': 'M2,2 L2,20 M2,2 L18,2 M2,11 L14,11 M2,20 L18,20',
-        'F': 'M2,2 L2,20 M2,2 L18,2 M2,11 L14,11',
-        'G': 'M18,7 Q18,2 13,2 L7,2 Q2,2 2,7 L2,15 Q2,20 7,20 L13,20 L13,14 L10,14',
-        'H': 'M2,2 L2,20 M18,2 L18,20 M2,11 L18,11',
-        'I': 'M6,2 L14,2 M10,2 L10,20 M6,20 L14,20',
-        'J': 'M6,2 L16,2 M12,2 L12,15 Q12,20 7,20 Q2,20 2,15',
-        'K': 'M2,2 L2,20 M18,2 L2,11 M10,11 L18,20',
-        'L': 'M2,2 L2,20 M2,20 L18,20',
-        'M': 'M2,20 L2,2 L10,10 L18,2 L18,20',
-        'N': 'M2,20 L2,2 L18,20 L18,2',
-        'O': 'M7,2 L13,2 Q18,2 18,7 L18,15 Q18,20 13,20 L7,20 Q2,20 2,15 L2,7 Q2,2 7,2',
-        'P': 'M2,2 L2,20 M2,2 L14,2 Q18,2 18,7 Q18,11 14,11 L2,11',
-        'Q': 'M7,2 L13,2 Q18,2 18,7 L18,15 Q18,20 13,20 L7,20 Q2,20 2,15 L2,7 Q2,2 7,2 M13,13 L19,19',
-        'R': 'M2,2 L2,20 M2,2 L14,2 Q18,2 18,7 Q18,11 14,11 L2,11 M10,11 L18,20',
-        'S': 'M18,7 Q18,2 13,2 L7,2 Q2,2 2,7 Q2,11 7,11 L13,11 Q18,11 18,16 Q18,20 13,20 L7,20 Q2,20 2,15',
-        'T': 'M2,2 L18,2 M10,2 L10,20',
-        'U': 'M2,2 L2,15 Q2,20 7,20 L13,20 Q18,20 18,15 L18,2',
-        'V': 'M2,2 L10,20 L18,2',
-        'W': 'M2,2 L6,20 L10,10 L14,20 L18,2',
-        'X': 'M2,2 L18,20 M18,2 L2,20',
-        'Y': 'M2,2 L10,11 L18,2 M10,11 L10,20',
-        'Z': 'M2,2 L18,2 L2,20 L18,20',
-        ' ': '',
-        // Add lowercase letters with simpler shapes
-        'a': 'M15,8 Q15,6 13,6 L7,6 Q5,6 5,8 L5,12 Q5,14 7,14 L13,14 Q15,14 15,12 L15,6 L15,18',
-        'b': 'M3,3 L3,18 M3,8 L11,8 Q15,8 15,11 Q15,14 11,14 L3,14',
-        'c': 'M15,11 Q15,8 12,8 L8,8 Q5,8 5,11 Q5,14 8,14 L12,14 Q15,14 15,11',
-        'd': 'M15,3 L15,18 M15,8 L7,8 Q3,8 3,11 Q3,14 7,14 L15,14',
-        'e': 'M15,11 Q15,8 12,8 L8,8 Q5,8 5,11 L15,11 Q15,14 12,14 L8,14 Q5,14 5,11',
-        'f': 'M12,3 Q15,3 15,6 M9,3 L9,18 M6,8 L12,8',
-        'g': 'M15,8 L15,15 Q15,18 12,18 L8,18 Q5,18 5,15 M15,8 L7,8 Q3,8 3,11 Q3,14 7,14 L15,14',
-        'h': 'M3,3 L3,18 M3,8 L11,8 Q15,8 15,11 L15,18',
-        'i': 'M9,6 L9,7 M9,8 L9,18 M6,18 L12,18',
-        'j': 'M12,6 L12,7 M12,8 L12,15 Q12,18 9,18 Q6,18 6,15',
-        'k': 'M3,3 L3,18 M12,8 L3,11 L9,14 L15,18',
-        'l': 'M9,3 L9,18 M6,18 L12,18',
-        'm': 'M3,8 L3,18 M3,8 L9,8 L9,18 M9,8 L15,8 L15,18',
-        'n': 'M3,8 L3,18 M3,8 L11,8 Q15,8 15,11 L15,18',
-        'o': 'M8,8 L12,8 Q15,8 15,11 Q15,14 12,14 L8,14 Q5,14 5,11 Q5,8 8,8',
-        'p': 'M3,8 L3,18 M3,8 L11,8 Q15,8 15,11 Q15,14 11,14 L3,14',
-        'q': 'M15,8 L15,18 M15,8 L7,8 Q3,8 3,11 Q3,14 7,14 L15,14',
-        'r': 'M3,8 L3,18 M3,8 L9,8 Q12,8 12,11',
-        's': 'M15,11 Q15,8 12,8 L8,8 Q5,8 5,11 L12,11 Q15,11 15,14 Q15,14 12,14 L8,14 Q5,14 5,11',
-        't': 'M9,3 L9,14 Q9,17 12,17 M6,8 L12,8',
-        'u': 'M3,8 L3,14 Q3,17 6,17 L12,17 Q15,17 15,14 L15,8',
-        'v': 'M3,8 L9,17 L15,8',
-        'w': 'M3,8 L6,17 L9,11 L12,17 L15,8',
-        'x': 'M3,8 L15,17 M15,8 L3,17',
-        'y': 'M3,8 L9,14 L15,8 M9,14 L9,18 Q9,20 6,20 Q3,20 3,18',
-        'z': 'M3,8 L15,8 L3,17 L15,17'
-    };
-
-    // Scale factor based on font size
-    const scale = fontSize / 20;
-
-    // Calculate starting position
-    const svgWidth = parseInt(svgString.match(/width="(\d+)"/)[1]);
-    const svgHeight = parseInt(svgString.match(/height="(\d+)"/)[1]);
-    const totalWidth = text.length * 20 * scale;
-    const startX = (svgWidth - totalWidth) / 2;
-    const startY = svgHeight / 2;
-
-    // Generate paths for each character
-    let pathElements = [];
-    for (let i = 0; i < text.length; i++) {
-        const char = text[i].toUpperCase();
-        const pathData = letterPaths[char] || letterPaths[text[i]] || '';
-
-        if (pathData) {
-            const x = startX + (i * 20 * scale);
-            const y = startY - (10 * scale); // Center vertically
-
-            pathElements.push(`<path d="${pathData}" fill="${color}" transform="translate(${x}, ${y}) scale(${scale})" />`);
-        }
-    }
-
-    const paths = pathElements.join('');
-
-    // Replace the text element with the generated paths
-    return svgString.replace(
-        /<text[^>]*>.*?<\/text>/s,
-        `<g fill="${color}">${paths}</g>`
-    );
-}
 
 // Function to download SVG
 function downloadSVG(svgContent, filename) {
