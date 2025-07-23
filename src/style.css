@@ -31,6 +31,24 @@ h1 {
   border: 2px dashed #ddd;
   border-radius: 8px;
   background-color: #f9f9f9;
+  transition: border-color 0.3s, background-color 0.3s;
+  cursor: pointer;
+}
+
+.font-upload:hover {
+  border-color: #4CAF50;
+  background-color: #f0f8f0;
+}
+
+.font-upload.drag-over {
+  border-color: #4CAF50;
+  background-color: #e8f5e8;
+  transform: scale(1.02);
+}
+
+.font-upload.drag-active {
+  border-color: #2196F3;
+  background-color: #e3f2fd;
 }
 
 .font-upload label {

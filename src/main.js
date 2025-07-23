@@ -11,20 +11,24 @@ document.querySelector('#app').innerHTML = `
       <input type="text" id="textInput" placeholder="Type something..." />
       
       <div class="font-upload">
-        <label for="fontFile">Upload Font File (.ttf, .otf, .woff, .woff2):</label>
+        <label for="fontFile">Drag & Drop Font File or Click to Browse</label>
         <input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2" />
         <span id="fontStatus">No font uploaded (using fallback)</span>
+        <small style="color: #888; display: block; margin-top: 5px;">Supports: .ttf, .otf, .woff, .woff2</small>
       </div>
       
       <div class="controls">
         <label for="fontSize">Font Size:</label>
         <input type="range" id="fontSize" min="12" max="48" value="16" />
         <span id="fontSizeValue">16px</span>
+        
+        <label for="colorPicker">Text Color:</label>
+        <input type="color" id="colorPicker" value="#333333" />
       </div>
     </div>
     <div class="svg-container">
       <div id="svgOutput"></div>
-      <div class="download-section" id="downloadSection" style="display: none;">
+      <div class="download-section" id="downloadSection">
         <button id="downloadBtn">Download SVG</button>
       </div>
     </div>
@@ -36,10 +40,12 @@ const textInput = document.getElementById('textInput');
 const svgOutput = document.getElementById('svgOutput');
 const fontSize = document.getElementById('fontSize');
 const fontSizeValue = document.getElementById('fontSizeValue');
+const colorPicker = document.getElementById('colorPicker');
 const downloadSection = document.getElementById('downloadSection');
 const downloadBtn = document.getElementById('downloadBtn');
 const fontFile = document.getElementById('fontFile');
 const fontStatus = document.getElementById('fontStatus');
+const fontUploadArea = document.querySelector('.font-upload');
 
 // Store uploaded font data
 let uploadedFontData = null;
@@ -86,25 +92,10 @@ fontFile.addEventListener('change', async (e) => {
     const file = e.target.files[0];
     if (file) {
         try {
-            fontStatus.textContent = 'Loading font...';
-            fontStatus.style.color = '#4CAF50';
-
-            // Read the font file as ArrayBuffer
-            const arrayBuffer = await file.arrayBuffer();
-            uploadedFontData = arrayBuffer;
-            uploadedFontName = file.name.split('.')[0]; // Get filename without extension
-
-            fontStatus.textContent = `Font loaded: ${file.name}`;
-            fontStatus.style.color = '#4CAF50';
-
-            // Auto-regenerate if there's text
-            if (textInput.value.trim()) {
-                await generateSVG(textInput.value);
-            }
-
+            await processFontFile(file);
         } catch (error) {
             console.error('Error loading font:', error);
-            fontStatus.textContent = 'Error loading font';
+            fontStatus.textContent = error.message || 'Error loading font';
             fontStatus.style.color = '#d32f2f';
             uploadedFontData = null;
             uploadedFontName = null;
@@ -117,21 +108,103 @@ fontFile.addEventListener('change', async (e) => {
     }
 });
 
+// Helper function to process font file (used by both file input and drag & drop)
+async function processFontFile(file) {
+    // Validate file type
+    const allowedTypes = ['.ttf', '.otf', '.woff', '.woff2'];
+    const fileExtension = '.' + file.name.split('.').pop().toLowerCase();
+
+    if (!allowedTypes.includes(fileExtension)) {
+        throw new Error('Please upload a valid font file (.ttf, .otf, .woff, .woff2)');
+    }
+
+    fontStatus.textContent = 'Loading font...';
+    fontStatus.style.color = '#4CAF50';
+
+    // Read the font file as ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer();
+    uploadedFontData = arrayBuffer;
+    uploadedFontName = file.name.split('.')[0]; // Get filename without extension
+
+    fontStatus.textContent = `Font loaded: ${file.name}`;
+    fontStatus.style.color = '#4CAF50';
+
+    // Auto-regenerate if there's text
+    if (textInput.value.trim()) {
+        await generateSVG(textInput.value);
+    }
+}
+
+// Drag and drop functionality
+fontUploadArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    fontUploadArea.classList.add('drag-over');
+});
+
+fontUploadArea.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    fontUploadArea.classList.add('drag-active');
+});
+
+fontUploadArea.addEventListener('dragleave', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    // Only remove classes if we're actually leaving the upload area
+    if (!fontUploadArea.contains(e.relatedTarget)) {
+        fontUploadArea.classList.remove('drag-over', 'drag-active');
+    }
+});
+
+fontUploadArea.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    fontUploadArea.classList.remove('drag-over', 'drag-active');
+
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        const file = files[0];
+
+        try {
+            await processFontFile(file);
+
+            // Update the file input to reflect the dropped file
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            fontFile.files = dt.files;
+
+        } catch (error) {
+            console.error('Error processing dropped font:', error);
+            fontStatus.textContent = error.message || 'Error loading font';
+            fontStatus.style.color = '#d32f2f';
+            uploadedFontData = null;
+            uploadedFontName = null;
+        }
+    }
+});
+
+// Click to upload functionality
+fontUploadArea.addEventListener('click', (e) => {
+    // Don't trigger if clicking on the file input itself
+    if (e.target !== fontFile) {
+        fontFile.click();
+    }
+});
+
 // Function to generate SVG with text
 async function generateSVG(text) {
     if (!text.trim()) {
         svgOutput.innerHTML = '<p class="error">Please enter some text!</p>';
-        downloadSection.style.display = 'none';
         return;
     }
 
-    // Show loading message
-    svgOutput.innerHTML = '<p class="loading">Converting text to paths...</p>';
-    downloadSection.style.display = 'none';
-
     try {
-        // Get current font size
+        // Get current font size and color
         const currentFontSize = fontSize.value;
+        const currentColor = colorPicker.value;
         const shouldSplitPaths = true; // Always split into separate paths
 
         // Calculate approximate text width (rough estimation)
@@ -150,7 +223,7 @@ async function generateSVG(text) {
                 text-anchor="middle" 
                 font-family="${fontFamily}" 
                 font-size="${currentFontSize}" 
-                fill="#333">
+                fill="${currentColor}">
             ${escapeHtml(text)}
           </text>
         </svg>
@@ -234,8 +307,8 @@ async function generateSVG(text) {
                             // Check if we actually got paths
                             const resultSvg = session.getSvgString();
                             if (resultSvg.includes('<path')) {
-                                // Fix positioning by centering the paths in the viewbox
-                                convertedSvg = centerPathsInViewbox(resultSvg, svgWidth, svgHeight);
+                                // Crop SVG to exact path bounds
+                                convertedSvg = cropSVGToPathBounds(resultSvg);
                                 success = true;
                                 console.log('Success! Found path elements');
                                 break;
@@ -284,7 +357,7 @@ async function generateSVG(text) {
 
                 const resultSvg = session.getSvgString();
                 if (resultSvg.includes('<path')) {
-                    convertedSvg = centerPathsInViewbox(resultSvg, svgWidth, svgHeight);
+                    convertedSvg = cropSVGToPathBounds(resultSvg);
                 } else {
                     throw new Error('No paths generated with default font');
                 }
@@ -322,7 +395,7 @@ async function generateSVG(text) {
             // Use manual text-to-path conversion as primary approach
             console.log('Using manual text-to-path conversion...');
             try {
-                convertedSvg = createManualTextPaths(svgString, text, currentFontSize, shouldSplitPaths);
+                convertedSvg = createManualTextPaths(svgString, text, currentFontSize, currentColor, shouldSplitPaths);
 
                 // Add a note about the conversion method
                 convertedSvg = convertedSvg.replace('</svg>',
@@ -347,16 +420,12 @@ async function generateSVG(text) {
         // Display the converted SVG
         svgOutput.innerHTML = convertedSvg;
 
-        // Show download section
-        downloadSection.style.display = 'block';
-
         // Store the SVG for download
         downloadBtn.onclick = () => downloadSVG(convertedSvg, text);
 
     } catch (error) {
         console.error('Error converting text to paths:', error);
         svgOutput.innerHTML = `<p class="error">Error converting text to paths: ${error.message}</p>`;
-        downloadSection.style.display = 'none';
     }
 }
 
@@ -372,21 +441,90 @@ function escapeHtml(text) {
     return text.replace(/[&<>"']/g, function (m) { return map[m]; });
 }
 
-// Function to center paths in the viewbox
-function centerPathsInViewbox(svgString, viewboxWidth, viewboxHeight) {
-    // Calculate the center point of the viewbox
-    const centerX = viewboxWidth / 2;
-    const centerY = viewboxHeight / 2;
+// Function to crop SVG to exact path bounds
+function cropSVGToPathBounds(svgString) {
+    try {
+        // Create a temporary DOM element to parse the SVG
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(svgString, 'image/svg+xml');
+        const svgElement = doc.querySelector('svg');
 
-    // Add a transform to the group containing the paths to center them
-    return svgString.replace(
-        /<g fill="#333">/,
-        `<g fill="#333" transform="translate(${centerX}, ${centerY})">`
-    );
+        if (!svgElement) return svgString;
+
+        // Get all path elements
+        const paths = svgElement.querySelectorAll('path');
+
+        if (paths.length === 0) return svgString;
+
+        let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+        // Calculate bounding box for all paths
+        paths.forEach(path => {
+            try {
+                // Create a temporary SVG to get accurate bounding box
+                const tempSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                tempSvg.style.position = 'absolute';
+                tempSvg.style.visibility = 'hidden';
+                document.body.appendChild(tempSvg);
+
+                const tempPath = path.cloneNode(true);
+                tempSvg.appendChild(tempPath);
+
+                const bbox = tempPath.getBBox();
+
+                minX = Math.min(minX, bbox.x);
+                minY = Math.min(minY, bbox.y);
+                maxX = Math.max(maxX, bbox.x + bbox.width);
+                maxY = Math.max(maxY, bbox.y + bbox.height);
+
+                document.body.removeChild(tempSvg);
+            } catch (e) {
+                console.warn('Could not get bbox for path:', e);
+            }
+        });
+
+        // If we couldn't calculate bounds, return original
+        if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) {
+            return svgString;
+        }
+
+        const width = maxX - minX;
+        const height = maxY - minY;
+
+        // Add small padding (2px) to prevent clipping
+        const padding = 2;
+        const finalWidth = width + (padding * 2);
+        const finalHeight = height + (padding * 2);
+        const finalMinX = minX - padding;
+        const finalMinY = minY - padding;
+
+        // Update SVG attributes
+        svgElement.setAttribute('width', Math.ceil(finalWidth));
+        svgElement.setAttribute('height', Math.ceil(finalHeight));
+        svgElement.setAttribute('viewBox', `${finalMinX} ${finalMinY} ${finalWidth} ${finalHeight}`);
+
+        // Remove any transform attributes that might interfere
+        const groups = svgElement.querySelectorAll('g');
+        groups.forEach(group => {
+            group.removeAttribute('transform');
+        });
+
+        return new XMLSerializer().serializeToString(doc);
+
+    } catch (error) {
+        console.warn('Error cropping SVG:', error);
+        return svgString;
+    }
+}
+
+// Function to center paths in the viewbox (legacy function, now replaced by cropSVGToPathBounds)
+function centerPathsInViewbox(svgString, viewboxWidth, viewboxHeight) {
+    // This function is now replaced by cropSVGToPathBounds for better results
+    return cropSVGToPathBounds(svgString);
 }
 
 // Manual fallback function to create simple letter paths
-function createManualTextPaths(svgString, text, fontSize, splitPaths) {
+function createManualTextPaths(svgString, text, fontSize, color, splitPaths) {
     // Simple letter shapes as SVG paths (very basic alphabet)
     const letterPaths = {
         'A': 'M2,20 L10,2 L18,20 M6,14 L14,14',
@@ -465,7 +603,7 @@ function createManualTextPaths(svgString, text, fontSize, splitPaths) {
             const x = startX + (i * 20 * scale);
             const y = startY - (10 * scale); // Center vertically
 
-            pathElements.push(`<path d="${pathData}" fill="#333" transform="translate(${x}, ${y}) scale(${scale})" />`);
+            pathElements.push(`<path d="${pathData}" fill="${color}" transform="translate(${x}, ${y}) scale(${scale})" />`);
         }
     }
 
@@ -474,7 +612,7 @@ function createManualTextPaths(svgString, text, fontSize, splitPaths) {
     // Replace the text element with the generated paths
     return svgString.replace(
         /<text[^>]*>.*?<\/text>/s,
-        `<g fill="#333">${paths}</g>`
+        `<g fill="${color}">${paths}</g>`
     );
 }
 
@@ -499,7 +637,6 @@ textInput.addEventListener('input', async () => {
         await generateSVG(text);
     } else {
         svgOutput.innerHTML = '';
-        downloadSection.style.display = 'none';
     }
 });
 
@@ -520,6 +657,13 @@ fontSize.addEventListener('input', () => {
 
 // Auto-generate when settings change
 fontSize.addEventListener('change', async () => {
+    if (textInput.value.trim()) {
+        await generateSVG(textInput.value);
+    }
+});
+
+// Auto-generate when color changes
+colorPicker.addEventListener('change', async () => {
     if (textInput.value.trim()) {
         await generateSVG(textInput.value);
     }
