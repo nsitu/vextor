@@ -34,7 +34,63 @@
 </head>
 
 <body>
-  <div id="app"> </div>
+  <div id="app">
+    <div class="container">
+      <img
+        src="./vextor.svg"
+        alt="Vextor"
+        class="logo"
+      />
+      <h4>SVG Text to Vector Path Generator</h4>
+      <div class="input-section">
+        <label for="textInput">Enter your text:</label>
+        <input
+          type="text"
+          id="textInput"
+          placeholder="Type something..."
+        />
+
+        <div class="font-upload">
+          <label for="fontFile">Drag & Drop Font File or Click to Browse</label>
+          <input
+            type="file"
+            id="fontFile"
+            accept=".ttf,.otf,.woff,.woff2"
+          />
+          <span id="fontStatus">No font uploaded (using fallback)</span>
+          <small style="color: #888; display: block; margin-top: 5px;">Supports: .ttf, .otf, .woff, .woff2</small>
+        </div>
+
+        <div class="controls">
+          <label for="fontSize">Font Size:</label>
+          <input
+            type="range"
+            id="fontSize"
+            min="12"
+            max="48"
+            value="16"
+          />
+          <span id="fontSizeValue">16px</span>
+
+          <label for="colorPicker">Text Color:</label>
+          <input
+            type="color"
+            id="colorPicker"
+            value="#333333"
+          />
+        </div>
+      </div>
+      <div class="svg-container">
+        <div id="svgOutput"></div>
+        <div
+          class="download-section"
+          id="downloadSection"
+        >
+          <button id="downloadBtn">Download SVG</button>
+        </div>
+      </div>
+    </div>
+  </div>
   <footer>
     Vextor was made by <a href="https://nsitu.ca">Harold</a> using <a
       href="https://www.anthropic.com/claude/sonnet">Claude Sonnet 4</a>. Text to SVG powered by <a

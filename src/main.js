@@ -1,39 +1,8 @@
 import './style.css'
-// Try the browser-specific import for svg-text-to-path with fontkit renderer instead
+
 import Session from 'svg-text-to-path/entries/browser-fontkit.js'
 
-// Create the HTML structure
-document.querySelector('#app').innerHTML = `
-  <div class="container">
-    <h1>SVG Text to Vector Path Generator</h1>
-    <div class="input-section">
-      <label for="textInput">Enter your text:</label>
-      <input type="text" id="textInput" placeholder="Type something..." />
-      
-      <div class="font-upload">
-        <label for="fontFile">Drag & Drop Font File or Click to Browse</label>
-        <input type="file" id="fontFile" accept=".ttf,.otf,.woff,.woff2" />
-        <span id="fontStatus">No font uploaded (using fallback)</span>
-        <small style="color: #888; display: block; margin-top: 5px;">Supports: .ttf, .otf, .woff, .woff2</small>
-      </div>
-      
-      <div class="controls">
-        <label for="fontSize">Font Size:</label>
-        <input type="range" id="fontSize" min="12" max="48" value="16" />
-        <span id="fontSizeValue">16px</span>
-        
-        <label for="colorPicker">Text Color:</label>
-        <input type="color" id="colorPicker" value="#333333" />
-      </div>
-    </div>
-    <div class="svg-container">
-      <div id="svgOutput"></div>
-      <div class="download-section" id="downloadSection">
-        <button id="downloadBtn">Download SVG</button>
-      </div>
-    </div>
-  </div>
-`;
+
 
 // Get references to elements
 const textInput = document.getElementById('textInput');
@@ -41,7 +10,6 @@ const svgOutput = document.getElementById('svgOutput');
 const fontSize = document.getElementById('fontSize');
 const fontSizeValue = document.getElementById('fontSizeValue');
 const colorPicker = document.getElementById('colorPicker');
-const downloadSection = document.getElementById('downloadSection');
 const downloadBtn = document.getElementById('downloadBtn');
 const fontFile = document.getElementById('fontFile');
 const fontStatus = document.getElementById('fontStatus');
@@ -58,7 +26,7 @@ async function loadDefaultFont() {
         fontStatus.textContent = 'Loading default font...';
         fontStatus.style.color = '#4CAF50';
 
-        const response = await fetch('/Roboto-Regular.ttf');
+        const response = await fetch(`./Roboto-Regular.ttf`);
         if (!response.ok) {
             throw new Error('Failed to fetch default font');
         }
@@ -517,11 +485,6 @@ function cropSVGToPathBounds(svgString) {
     }
 }
 
-// Function to center paths in the viewbox (legacy function, now replaced by cropSVGToPathBounds)
-function centerPathsInViewbox(svgString, viewboxWidth, viewboxHeight) {
-    // This function is now replaced by cropSVGToPathBounds for better results
-    return cropSVGToPathBounds(svgString);
-}
 
 // Manual fallback function to create simple letter paths
 function createManualTextPaths(svgString, text, fontSize, color, splitPaths) {
@@ -622,7 +585,7 @@ function downloadSVG(svgContent, filename) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${filename.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_vector.svg`;
+    a.download = `${filename.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.svg`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
